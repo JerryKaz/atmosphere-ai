@@ -52,5 +52,3 @@ Atmosphere AI follows a "Natural Minimalist" design language. It avoids generic 
 **Designed and Developed by [Jerry Myron](https://github.com/JerryKaz)**
 Created in the Aesthetic Intelligence Laboratory.
 
----
-© 2026 Atmosphere AI • Earth Elements Dataset v2.0
