@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
+  
+  --color-natural-bg: var(--bg);
+  --color-natural-ink: var(--ink);
+  --color-natural-sage: var(--sage);
+  --color-natural-clay: var(--clay);
+  --color-card: var(--card);
+}
+
+@layer base {
+  :root {
+    --bg: #F1F3EF;
+    --ink: #2C332A;
+    --sage: #A7B09E;
+    --clay: #E6BA95;
+    --card: #FFFFFF;
+  }
+
+  .dark {
+    --bg: #1A1F19;
+    --ink: #F1F3EF;
+    --sage: #7D8775;
+    --clay: #D4A373;
+    --card: #242B22;
+  }
+
+  body {
+    @apply bg-natural-bg text-natural-ink antialiased overflow-x-hidden transition-colors duration-300;
+  }
+}
+
+.card {
+  @apply bg-card rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-colors duration-300;
+}
+
+.pill {
+  @apply bg-natural-sage text-white px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold tracking-widest uppercase;
+}
+
+.stat-box {
+  @apply border-l border-natural-ink/10 pl-5;
+}
+
+.serif {
+  @apply font-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-natural-sage/30 rounded-full;
+}

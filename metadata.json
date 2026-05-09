@@ -1,0 +1,6 @@
+{
+  "name": "Atmosphere AI",
+  "description": "A high-performance, atmospheric weather app with AI-powered clothing and activity recommendations powered by Google Gemini.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["AI Insights", "Real-time Weather", "Interactive Charts"]
+}
