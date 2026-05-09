@@ -2,6 +2,18 @@
 
 **Atmosphere AI** is a sophisticated weather intelligence platform that blends real-time atmospheric data with generative AI insights. Built with a focus on aesthetic precision and functional utility, it provides users with more than just temperature readings it offers curated advice for living in harmony with the current environment.
 
+## Screenshoot
+<table>
+  <tr>
+    <td>
+      <img src="https://github.com/user-attachments/assets/7f5105de-0287-431c-ba65-2fb81e1f70e5" width="300"/>
+    </td>
+    <td>
+      <img src="https://github.com/user-attachments/assets/6d2cf46e-8bab-42d0-9205-ef68ac3ada7b" width="300"/>
+    </td>
+  </tr>
+</table>
+
 ##  Key Features
 
 - **Atmospheric intelligence (AI Advisor):** Leverages the Google Gemini API to provide personalized "Selected Attire" and "Curated Activities" recommendations based on current weather, UV index, and wind conditions.
@@ -47,6 +59,11 @@ npm run dev
 
 ## Design Philosophy
 Atmosphere AI follows a "Natural Minimalist" design language. It avoids generic gradients and standard shadows in favor of subtle borders, backdrop blurs, and intentional typography pairings (Inter for UI, Space Grotesk for metrics).
+
+
+
+
+
 
 ##  Credits
 **Designed and Developed by [Jerry Myron](https://github.com/JerryKaz)**
