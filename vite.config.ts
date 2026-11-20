@@ -5,7 +5,9 @@ import { defineConfig } from 'vite';
 // The Gemini key is read from VITE_GEMINI_API_KEY via import.meta.env.
 // Anything prefixed VITE_ ships to the browser; see README "Security".
 export default defineConfig({
-  base: '/atmosphere-ai/',
+  // Relative asset paths work wherever the site is hosted:
+  // Netlify (served from "/") and GitHub Pages (served from "/atmosphere-ai/").
+  base: './',
   plugins: [react(), tailwindcss()],
   build: {
     rollupOptions: {
