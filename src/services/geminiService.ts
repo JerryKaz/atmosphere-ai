@@ -3,22 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from '@google/genai';
+import { readJson, writeJson } from '../lib/storage';
 
-let genAI: GoogleGenAI | null = null;
+// NOTE: a key used in the browser is visible to anyone who opens DevTools.
+// For production, move this call behind a small server function that holds
+// the key, and point the app at that endpoint instead.
+const API_KEY: string | undefined = import.meta.env.VITE_GEMINI_API_KEY;
+const PLACEHOLDER_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
+const MODEL = 'gemini-3-flash-preview';
+const CACHE_KEY = 'atmosphere_ai_cache';
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 20;
 
-function getGenAI() {
-  if (!genAI) {
-    // In AI Studio browser environment, process.env.GEMINI_API_KEY is typically 
-    // injected via build-time defines in vite.config.ts
-    const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey === 'YOUR_GEMINI_API_KEY') {
-      throw new Error("Gemini API Key is missing. Please ensure your API key is properly configured.");
-    }
-    genAI = new GoogleGenAI({ apiKey });
-  }
-  return genAI;
+let client: GoogleGenAI | null = null;
+
+export function isAiConfigured(): boolean {
+  return !!API_KEY && !PLACEHOLDER_KEYS.has(API_KEY);
+}
+
+function getClient(): GoogleGenAI {
+  if (!isAiConfigured()) throw new Error('AI_NOT_CONFIGURED');
+  client ??= new GoogleGenAI({ apiKey: API_KEY! });
+  return client;
 }
 
 export interface WeatherInsight {
@@ -30,80 +37,110 @@ export interface WeatherInsight {
   summary: string;
 }
 
-export async function getWeatherInsights(
-  temp: number,
-  description: string,
-  isDay: boolean,
-  windSpeed: number,
-  uvIndex?: number
-): Promise<WeatherInsight> {
-  const prompt = `Given the following weather conditions:
-Current Temperature: ${temp}°C
-Condition: ${description}
-Time: ${isDay ? "Daytime" : "Nighttime"}
-Wind Speed: ${windSpeed} km/h
-${uvIndex !== undefined ? `UV Index: ${uvIndex}` : ""}
+export interface InsightInput {
+  temp: number;
+  feelsLike: number;
+  description: string;
+  isDay: boolean;
+  windSpeed: number;
+  humidity: number;
+  uvIndex: number;
+  precipProbability: number;
+}
 
-Provide a JSON object with:
-1. "outfit": A specific clothing recommendation. Focus on layers and thermal comfort, and if UV index is high (above 3), suggest UV-protective gear like hats, sunglasses, or SPF.
-2. "outfitReason": A brief (1 sentence) explanation of why this outfit is recommended based on the weather (temp, wind, UV).
-3. "activities": A list of 2-3 suitable activities for these conditions.
-4. "activitiesReason": A brief (1 sentence) explanation of why these activities are suitable for current atmosphere.
-5. "alert": (Optional) Any important safety warnings (e.g., high UV warning if index > 6, high wind, slippery roads).
-6. "summary": A very brief (1 sentence) atmospheric summary of the day.
+type CacheEntry = { at: number; value: WeatherInsight };
 
-Be creative and helpful!`;
+// Similar conditions get the same advice. Rounding the inputs means a refresh
+// a few minutes later reuses the cached answer and does not spend quota.
+function cacheKey(i: InsightInput): string {
+  const r = (n: number, step: number) => Math.round(n / step) * step;
+  return [
+    r(i.feelsLike, 2),
+    i.description,
+    i.isDay ? 'd' : 'n',
+    r(i.windSpeed, 10),
+    r(i.uvIndex, 2),
+    r(i.precipProbability, 25),
+  ].join('|');
+}
 
-  try {
-    const ai = getGenAI();
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            outfit: { type: Type.STRING },
-            outfitReason: { type: Type.STRING },
-            activities: { 
-              type: Type.ARRAY, 
-              items: { type: Type.STRING } 
-            },
-            activitiesReason: { type: Type.STRING },
-            alert: { type: Type.STRING },
-            summary: { type: Type.STRING },
-          },
-          required: ["outfit", "outfitReason", "activities", "activitiesReason", "summary"],
+function isInsight(v: unknown): v is WeatherInsight {
+  const o = v as WeatherInsight;
+  return (
+    !!o &&
+    typeof o.outfit === 'string' &&
+    typeof o.outfitReason === 'string' &&
+    Array.isArray(o.activities) &&
+    o.activities.every((a) => typeof a === 'string') &&
+    typeof o.activitiesReason === 'string' &&
+    typeof o.summary === 'string'
+  );
+}
+
+/**
+ * Returns AI advice for the given conditions, or throws. The caller shows an
+ * honest "unavailable" state on failure instead of fake advice.
+ */
+export async function getWeatherInsights(input: InsightInput, { force = false } = {}): Promise<WeatherInsight> {
+  const key = cacheKey(input);
+  const cache = readJson<Record<string, CacheEntry>>(CACHE_KEY, {});
+  const hit = cache[key];
+  if (!force && hit && Date.now() - hit.at < CACHE_TTL_MS && isInsight(hit.value)) return hit.value;
+
+  const prompt = `Current weather:
+- Temperature: ${input.temp}°C (feels like ${input.feelsLike}°C)
+- Condition: ${input.description}
+- Time of day: ${input.isDay ? 'daytime' : 'night'}
+- Wind: ${input.windSpeed} km/h
+- Humidity: ${input.humidity}%
+- UV index: ${input.uvIndex}
+- Chance of rain in the next few hours: ${input.precipProbability}%
+
+Return JSON with:
+- "outfit": one concrete clothing recommendation (layers, rain gear, sun protection when UV > 3).
+- "outfitReason": one sentence explaining why.
+- "activities": 2-3 short activity ideas (max 4 words each) that suit these conditions.
+- "activitiesReason": one sentence explaining why.
+- "alert": only if there is a real safety concern (UV > 6, strong wind, heat, storms); otherwise omit.
+- "summary": one short, friendly sentence describing the day.`;
+
+  const response = await getClient().models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          outfit: { type: Type.STRING },
+          outfitReason: { type: Type.STRING },
+          activities: { type: Type.ARRAY, items: { type: Type.STRING } },
+          activitiesReason: { type: Type.STRING },
+          alert: { type: Type.STRING },
+          summary: { type: Type.STRING },
         },
+        required: ['outfit', 'outfitReason', 'activities', 'activitiesReason', 'summary'],
       },
-    });
+    },
+  });
 
-    return JSON.parse(response.text);
-  } catch (error: any) {
-    // Check for quota exhaustion
-    const errorMessage = error?.message || "";
-    const isQuotaError = errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED");
-    
-    if (isQuotaError) {
-      console.warn("Gemini API Quota reached. Using secondary atmospheric heuristic.");
-      return {
-        outfit: "Functional seasonal layers for current conditions.",
-        outfitReason: "Standard recommendation based on seasonal averages.",
-        activities: ["Adapt to local environment", "Standard daily routine"],
-        activitiesReason: "These activities are versatile across most conditions.",
-        summary: "The atmospheric oracle is currently in standby mode (quota reset pending).",
-        alert: "AI insight capacity exceeded. Full synchronization will resume shortly."
-      };
-    }
+  const text = response.text;
+  if (!text) throw new Error('Empty AI response');
+  const parsed: unknown = JSON.parse(text);
+  if (!isInsight(parsed)) throw new Error('Malformed AI response');
 
-    console.error("Gemini Insight Error:", error);
-    return {
-      outfit: "Standard comfort wear recommended.",
-      outfitReason: "Insufficient data for specialized recommendation.",
-      activities: ["Observe local surroundings", "Indoor coordination"],
-      activitiesReason: "Safe options when intelligence modules are recalibrating.",
-      summary: "AI systems are currently recalibrating for better accuracy.",
-    };
-  }
+  // Keep the cache small: newest entries win.
+  const entries = Object.entries({ ...cache, [key]: { at: Date.now(), value: parsed } })
+    .sort(([, a], [, b]) => b.at - a.at)
+    .slice(0, MAX_CACHE_ENTRIES);
+  writeJson(CACHE_KEY, Object.fromEntries(entries));
+
+  return parsed;
+}
+
+export function describeAiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg === 'AI_NOT_CONFIGURED') return 'Add a Gemini API key to enable personalised advice.';
+  if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) return 'AI quota reached. Try again in a little while.';
+  return 'AI advice is unavailable right now.';
 }

@@ -1,28 +1,25 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-
-  return {
-    base: '/atmosphere-ai/',
-
-    plugins: [react(), tailwindcss()],
-
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
-
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
+// The Gemini key is read from VITE_GEMINI_API_KEY via import.meta.env.
+// Anything prefixed VITE_ ships to the browser; see README "Security".
+export default defineConfig({
+  base: '/atmosphere-ai/',
+  plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy libraries so the app code changes don't bust their cache.
+        manualChunks: {
+          charts: ['recharts'],
+          ai: ['@google/genai'],
+          motion: ['motion'],
+        },
       },
     },
-
-    server: {
-      hmr: process.env.DISABLE_HMR !== 'true',
-    },
-  };
+  },
+  server: {
+    hmr: process.env.DISABLE_HMR !== 'true',
+  },
 });

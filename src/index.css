@@ -1,63 +1,96 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-serif: 'Cormorant Garamond', serif;
-  
-  --color-natural-bg: var(--bg);
-  --color-natural-ink: var(--ink);
-  --color-natural-sage: var(--sage);
-  --color-natural-clay: var(--clay);
+  --font-serif: 'Cormorant Garamond', ui-serif, Georgia, serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-page: var(--page);
   --color-card: var(--card);
+  --color-mist: var(--mist);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-clay: var(--clay);
+  --color-clay-deep: var(--clay-deep);
+  --color-sky: var(--sky);
 }
 
 @layer base {
+  /* Light is the default theme. */
   :root {
-    --bg: #F1F3EF;
-    --ink: #2C332A;
-    --sage: #A7B09E;
-    --clay: #E6BA95;
-    --card: #FFFFFF;
+    --page: #f6f7f3;
+    --card: #ffffff;
+    --mist: #f0f2ec;
+    --line: #e5e8e0;
+    --ink: #1f2a1f;
+    --ink-soft: #66705f;
+    --sage: #7c9070;
+    --sage-deep: #55684a;
+    --clay: #e0955e;
+    --clay-deep: #b56a33;
+    --sky: #3d84c6;
+    color-scheme: light;
   }
 
   .dark {
-    --bg: #1A1F19;
-    --ink: #F1F3EF;
-    --sage: #7D8775;
-    --clay: #D4A373;
-    --card: #242B22;
+    --page: #141914;
+    --card: #1d231c;
+    --mist: #262d25;
+    --line: #313a30;
+    --ink: #eef1ea;
+    --ink-soft: #a9b3a3;
+    --sage: #9cb08f;
+    --sage-deep: #b8caa9;
+    --clay: #e6a676;
+    --clay-deep: #f0b98d;
+    --sky: #7ab3e6;
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-natural-bg text-natural-ink antialiased overflow-x-hidden transition-colors duration-300;
+    @apply bg-page font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--sage) 30%, transparent);
   }
 }
 
-.card {
-  @apply bg-card rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-colors duration-300;
+@layer components {
+  .card {
+    @apply rounded-[28px] border border-line bg-card shadow-[0_1px_2px_rgba(31,42,31,0.04),0_8px_24px_rgba(31,42,31,0.04)];
+  }
 }
 
-.pill {
-  @apply bg-natural-sage text-white px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold tracking-widest uppercase;
+/* Dark mode: the light hero gradients become subtle tints. */
+.dark .card.bg-gradient-to-br {
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--sky) 14%, var(--card)), var(--card));
+}
+.dark .bg-white,
+.dark .bg-white\/70,
+.dark .bg-white\/80 {
+  background-color: var(--card);
+}
+.dark .border-white\/80 {
+  border-color: var(--line);
 }
 
-.stat-box {
-  @apply border-l border-natural-ink/10 pl-5;
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
-.serif {
-  @apply font-serif;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-natural-sage/30 rounded-full;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,71 +1,129 @@
-# Atmosphere AI v2.0
+# Atmosphere AI
 
-**Atmosphere AI** is a sophisticated weather intelligence platform that blends real-time atmospheric data with generative AI insights. Built with a focus on aesthetic precision and functional utility, it provides users with more than just temperature readings it offers curated advice for living in harmony with the current environment.
+**Atmosphere AI** is a clean, light weather app that pairs live forecasts with AI advice on what to wear and what to do. It covers the next 24 hours, the coming week, air quality, UV, wind and daylight, and compares this week with the same dates last year.
 
-## Screenshoot
+**Live demo:** [jerrykaz.github.io/atmosphere-ai](https://jerrykaz.github.io/atmosphere-ai)
+
+![Atmosphere AI in light theme](docs/screenshots/desktop-light.png)
+
+## Screenshots
+
 <table>
   <tr>
-    <td>
-      <img src="https://github.com/user-attachments/assets/7f5105de-0287-431c-ba65-2fb81e1f70e5" width="300"/>
-    </td>
-    <td>
-      <img src="https://github.com/user-attachments/assets/6d2cf46e-8bab-42d0-9205-ef68ac3ada7b" width="300"/>
-    </td>
+    <td width="66%"><img src="docs/screenshots/desktop-full.png" alt="Full dashboard: current conditions, AI advisor, 24-hour chart, 7-day forecast, details and last-year comparison" /></td>
+    <td width="34%"><img src="docs/screenshots/mobile.png" alt="Mobile layout" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Full dashboard (left) and mobile (right)</sub></td>
   </tr>
 </table>
 
-##  Key Features
+<table>
+  <tr>
+    <td><img src="docs/screenshots/search.png" alt="Search with current location, saved places and recent searches" /></td>
+    <td><img src="docs/screenshots/hourly-rain.png" alt="Hourly chart showing rain chance" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Search: use my location, saved places, recent</sub></td>
+    <td align="center"><sub>Next 24 hours: temperature, rain chance or wind</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/desktop-dark.png" alt="Optional dark theme" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Optional dark theme</sub></td>
+  </tr>
+</table>
 
-- **Atmospheric intelligence (AI Advisor):** Leverages the Google Gemini API to provide personalized "Selected Attire" and "Curated Activities" recommendations based on current weather, UV index, and wind conditions.
-- **Micro-Animations:** A highly dynamic UI powered by Framer Motion, featuring weather-responsive icons (glinting suns, drifting snow, pulsing fog) and smooth state transitions.
-- **Deep Historical Context:** View atmospheric trends from the past 7 days using Recharts to visualize temperature and precipitation fluctuations.
-- **Fuzzy Search & Recent History:** Advanced location searching using `Fuse.js` for typo-tolerance, plus a persistent history of your last 5 searched locations.
-- **Robust Offline Mode:** Built-in caching mechanisms allow the app to function without an internet connection, clearly displaying the last synchronization timestamp.
-- **Sharing Integration:** Quickly share current atmospheric states and AI recommendations via the native Web Share API or system clipboard.
-- **Dark/Light Harmony:** A meticulously crafted dual-theme system that adapts to user preference while maintaining high legibility and aesthetic consistency.
+## Features
 
-##  Technical Stack
+**Forecast**
+- Current conditions with real "feels like", today's high and low, and live rain chance for the next few hours
+- Next 24 hours, starting from the current hour, as a chart you can switch between temperature, rain chance and wind
+- 7-day forecast with temperature range bars and a marker for the current temperature
+- Air quality (US AQI) with plain-language advice
+- UV index with today's peak, wind with compass and gusts, pressure, cloud cover
+- Sunrise and sunset arc showing where the sun is now and total daylight
+- **This week vs last year**: daily highs compared with the same dates one year earlier
 
-- **Frontend:** React 19 + TypeScript
-- **Styling:** Tailwind CSS 4.0
-- **Animations:** Framer Motion (motion/react)
-- **Intelligence:** Google Gemini API (@google/genai)
-- **Data Engine:** Open-Meteo API (Weather & Geocoding)
-- **Visualization:** Recharts
-- **Search Logic:** Fuse.js
-- **Icons:** Lucide React
+**AI Advisor** (Google Gemini)
+- What to wear, with the reason
+- 2–3 activity ideas that suit the conditions
+- Safety notes only when there is a real concern (high UV, strong wind, storms)
+- "New ideas" button to regenerate; similar conditions reuse a cached answer for 30 minutes to save quota
+- If AI is unavailable, the card says so instead of showing made-up advice
 
-##  Getting Started
+**Usability**
+- Live search with suggestions as you type, typo-tolerant ranking (Fuse.js), full keyboard support, and `/` to focus search from anywhere
+- "Use my current location", saved places (star a city) and recent searches
+- °C / °F toggle, remembered between visits
+- Light theme by default, with an optional dark theme and no flash on load
+- Shareable links: the URL holds the city, so a shared link opens the same place
+- Refreshes automatically every 10 minutes and when you come back to the tab
+- Shows the last saved forecast per city when offline or when the service is down
+- Severe weather banner for thunderstorms, violent showers, heavy snow and freezing rain
+- Accessible: labelled controls, keyboard-navigable search, readable contrast, and animations that respect "reduce motion"
 
-### Prerequisites
-- Node.js (v18 or higher)
-- A Google Gemini API Key
+## Tech stack
 
-### Configuration
-1. Clone the repository.
-2. Define your environment variables in a `.env` file:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+| Area | Tools |
+| --- | --- |
+| Frontend | React 19, TypeScript (strict) |
+| Styling | Tailwind CSS 4 |
+| Animation | Motion (`motion/react`) |
+| Charts | Recharts |
+| AI | Google Gemini (`@google/genai`) |
+| Weather data | Open-Meteo forecast, air quality, archive and geocoding APIs |
+| Reverse geocoding | OpenStreetMap Nominatim |
+| Search ranking | Fuse.js |
+| Icons | Lucide React |
+| Build and deploy | Vite, GitHub Pages |
 
-### Execution
-```bash
-# Install dependencies
-npm install
+## Project structure
 
-# Start the development server
-npm run dev
+```
+src/
+  App.tsx               page layout, location, theme and unit state
+  components/           SearchBox, CurrentConditions, AIAdvisor, HourlyForecast,
+                        DailyForecast, Details, LastYear, WeatherIcon, Toast
+  hooks/                useWeather (fetch, cache, auto-refresh), useInsights,
+                        useLocalStorage, useOnline
+  lib/                  weather codes, formatting and units, safe storage
+  services/             weatherService (Open-Meteo), geminiService
+docs/screenshots/       images used in this README
 ```
 
-## Design Philosophy
-Atmosphere AI follows a "Natural Minimalist" design language. It avoids generic gradients and standard shadows in favor of subtle borders, backdrop blurs, and intentional typography pairings (Inter for UI, Space Grotesk for metrics).
+## Getting started
 
+**Requirements:** Node.js 18 or newer. A Gemini API key is optional; the forecast works without it.
 
+```bash
+git clone https://github.com/JerryKaz/atmosphere-ai.git
+cd atmosphere-ai
+npm install
+cp .env.example .env    # then add your key
+npm run dev             # http://localhost:3000/atmosphere-ai/
+```
 
+`.env`:
 
+```env
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
 
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Type-check with TypeScript |
+| `npm run deploy` | Build and publish to GitHub Pages |
 
-##  Credits
-**Designed and Developed by [Jerry Myron](https://github.com/JerryKaz)**
-Created in the Aesthetic Intelligence Laboratory.
+## Security note
 
+Any `VITE_` variable is bundled into the browser build, so a Gemini key used this way is visible to anyone who opens DevTools. That is fine for local development. For a public deployment, put the Gemini call behind a small server function (for example a Vercel or Cloudflare function) that holds the key and rate-limits requests, and call that endpoint from `geminiService.ts` instead.
+
+## Credits
+
+Designed and developed by [Jerry Myron](https://github.com/JerryKaz).
+Weather data by [Open-Meteo](https://open-meteo.com). Map data © OpenStreetMap contributors.
